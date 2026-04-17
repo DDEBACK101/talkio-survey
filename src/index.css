@@ -85,3 +85,31 @@ body {
 .submit-button:hover {
   opacity: 0.9;
 }
+.notice-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f7fb;
+}
+
+.notice-button {
+  min-width: 220px;
+  height: 52px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.notice-button:hover {
+  opacity: 0.95;
+}
+
+.popup-survey-container {
+  padding-top: 24px;
+}
