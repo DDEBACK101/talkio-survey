@@ -145,10 +145,6 @@ function SurveyPage() {
     <div className="survey-container popup-survey-container">
       <h1 className="survey-title">{surveyData.surveyTitle}</h1>
 
-      <div style={{ marginBottom: "12px", fontSize: "14px" }}>
-        userKey: {userKey || "없음"}
-      </div>
-
       <div className="progress-box">
         <div className="progress-text">
           진행률: {answeredCount} / {totalQuestionCount} ({progressPercent}%)
