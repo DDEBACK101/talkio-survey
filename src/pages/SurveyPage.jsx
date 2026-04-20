@@ -10,7 +10,7 @@ function SurveyPage() {
   const [etcInputs, setEtcInputs] = useState({});
   const [searchParams] = useSearchParams();
 
-  const userKey = searchParams.get("userkey")?.trim() || "";
+  const cukey = searchParams.get("cukey")?.trim() || "";
 
   const allQuestions = useMemo(() => {
     return surveyData.sections.flatMap((section) => section.questions);
@@ -91,8 +91,8 @@ function SurveyPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!userKey) {
-      alert("userkey가 없습니다. 올바른 경로로 접속해주세요.");
+    if (!cukey) {
+      alert("cukey가 없습니다. 올바른 경로로 접속해주세요.");
       return;
     }
 
@@ -101,7 +101,7 @@ function SurveyPage() {
 
     const submitData = {
       surveyTitle: surveyData.surveyTitle,
-      userKey,
+      cukey,
       submittedAt: new Date().toISOString(),
       responses: buildSubmitData(),
     };
@@ -117,7 +117,7 @@ function SurveyPage() {
       const { error } = await supabase.from("survey_responses").insert([
         {
           survey_title: surveyData.surveyTitle,
-          user_key: userKey,
+          cukey,
           responses: submitData.responses,
         },
       ]);
@@ -128,10 +128,10 @@ function SurveyPage() {
         return;
       }
 
-      alert("저장되었습니다");
+      const returnUrl = `${window.location.origin}/?cukey=${encodeURIComponent(cukey)}&result=OK`;
 
       if (window.opener && !window.opener.closed) {
-        window.opener.location.reload();
+        window.opener.location.href = returnUrl;
       }
 
       window.close();

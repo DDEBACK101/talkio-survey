@@ -2,15 +2,15 @@ import { useSearchParams } from "react-router-dom";
 
 export default function NoticePage() {
   const [searchParams] = useSearchParams();
-  const userKey = searchParams.get("userkey")?.trim() || "";
+  const cukey = searchParams.get("cukey")?.trim() || "";
 
   const handleOpenSurveyPopup = () => {
-    if (!userKey) {
-      alert("userkey가 없습니다. 올바른 경로로 접속해주세요.");
+    if (!cukey) {
+      alert("cukey가 없습니다. 올바른 경로로 접속해주세요.");
       return;
     }
 
-    const surveyUrl = `${window.location.origin}/survey?userkey=${encodeURIComponent(userKey)}`;
+    const surveyUrl = `${window.location.origin}/survey?cukey=${encodeURIComponent(cukey)}`;
 
     const popup = window.open(
       surveyUrl,
