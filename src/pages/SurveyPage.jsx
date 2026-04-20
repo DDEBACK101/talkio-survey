@@ -107,7 +107,7 @@ function SurveyPage() {
     };
 
     try {
-      // 1. 외부 서버 AJAX 확인
+      // 1. 외부 서버 AJAX 통신
       const externalResult = await requestExternalServerOk(submitData);
 
       if (!externalResult.ok) {
@@ -131,14 +131,24 @@ function SurveyPage() {
         return;
       }
 
-      // 3. 성공 시 부모창 URL 변경 후 팝업 닫기
-      const returnUrl = `${window.location.origin}/?cukey=${encodeURIComponent(cukey)}&result=OK`;
-
+      // 3. 기존 talkio.co.kr 창 새로고침
       if (window.opener && !window.opener.closed) {
-        window.opener.location.href = returnUrl;
+        try {
+          window.opener.location.reload();
+        } catch (reloadError) {
+          console.error("opener 새로고침 실패:", reloadError);
+        }
       }
 
+      // 4. 현재 창 닫기
       window.close();
+
+      // 5. close가 브라우저 정책으로 막히는 경우 대비
+      setTimeout(() => {
+        if (!window.closed) {
+          alert("저장되었습니다. 창이 자동으로 닫히지 않으면 직접 닫아주세요.");
+        }
+      }, 300);
     } catch (error) {
       console.error("처리 실패:", error);
       alert("저장에 실패했습니다");

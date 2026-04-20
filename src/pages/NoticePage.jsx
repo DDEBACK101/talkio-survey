@@ -4,7 +4,7 @@ export default function NoticePage() {
   const [searchParams] = useSearchParams();
   const cukey = searchParams.get("cukey")?.trim() || "";
 
-  const handleOpenSurveyPopup = () => {
+  const handleMoveSurveyPage = () => {
     if (!cukey) {
       alert("cukey가 없습니다. 올바른 경로로 접속해주세요.");
       return;
@@ -12,23 +12,12 @@ export default function NoticePage() {
 
     const surveyUrl = `${window.location.origin}/survey?cukey=${encodeURIComponent(cukey)}`;
 
-    const popup = window.open(
-      surveyUrl,
-      "surveyPopup",
-      "width=900,height=850,left=200,top=100,resizable=yes,scrollbars=yes",
-    );
-
-    if (!popup) {
-      alert("팝업이 차단되었습니다. 팝업 허용 후 다시 시도해주세요.");
-      return;
-    }
-
-    popup.focus();
+    window.location.href = surveyUrl;
   };
 
   return (
     <div className="notice-page">
-      <button className="notice-button" onClick={handleOpenSurveyPopup}>
+      <button className="notice-button" onClick={handleMoveSurveyPage}>
         설문조사하러 가기
       </button>
     </div>
