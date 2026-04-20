@@ -107,13 +107,16 @@ function SurveyPage() {
     };
 
     try {
+      // 1. 외부 서버로 AJAX 통신
       const externalResult = await requestExternalServerOk(submitData);
 
       if (!externalResult.ok) {
+        console.error("외부 서버 응답 실패:", externalResult);
         alert("저장에 실패했습니다");
         return;
       }
 
+      // 2. 외부 서버 OK일 때만 Supabase 저장
       const { error } = await supabase.from("survey_responses").insert([
         {
           survey_title: surveyData.surveyTitle,
@@ -123,11 +126,12 @@ function SurveyPage() {
       ]);
 
       if (error) {
-        console.error("저장 실패:", error);
+        console.error("Supabase 저장 실패:", error);
         alert("저장에 실패했습니다");
         return;
       }
 
+      // 3. 성공 시 opener URL 변경 후 팝업 닫기
       const returnUrl = `${window.location.origin}/?cukey=${encodeURIComponent(cukey)}&result=OK`;
 
       if (window.opener && !window.opener.closed) {
