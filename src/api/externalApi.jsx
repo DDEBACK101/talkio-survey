@@ -23,6 +23,7 @@ export const requestExternalServerOk = async (payload) => {
   });
 
   const rawText = await response.text();
+  const normalizedText = rawText.trim().toUpperCase();
 
   let data = {};
   try {
@@ -31,7 +32,6 @@ export const requestExternalServerOk = async (payload) => {
     data = {};
   }
 
-  const normalizedText = rawText.trim().toUpperCase();
   const normalizedResult =
     typeof data.result === "string" ? data.result.trim().toUpperCase() : "";
   const normalizedStatus =

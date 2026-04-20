@@ -107,7 +107,7 @@ function SurveyPage() {
     };
 
     try {
-      // 1. 외부 서버로 AJAX 통신
+      // 1. 외부 서버 AJAX 확인
       const externalResult = await requestExternalServerOk(submitData);
 
       if (!externalResult.ok) {
@@ -131,7 +131,7 @@ function SurveyPage() {
         return;
       }
 
-      // 3. 성공 시 opener URL 변경 후 팝업 닫기
+      // 3. 성공 시 부모창 URL 변경 후 팝업 닫기
       const returnUrl = `${window.location.origin}/?cukey=${encodeURIComponent(cukey)}&result=OK`;
 
       if (window.opener && !window.opener.closed) {
