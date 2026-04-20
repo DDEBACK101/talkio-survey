@@ -131,23 +131,28 @@ function SurveyPage() {
         return;
       }
 
-      // 3. 기존 talkio.co.kr 창 새로고침
+      // 3. 부모창(talkio) 새로고침 대신 같은 URL로 다시 이동
       if (window.opener && !window.opener.closed) {
         try {
-          window.opener.location.reload();
-        } catch (reloadError) {
-          console.error("opener 새로고침 실패:", reloadError);
+          window.opener.location.replace(
+            "https://talkio.co.kr/login/login_notice/",
+          );
+        } catch (moveError) {
+          console.error("부모창 이동 실패:", moveError);
         }
       }
 
-      // 4. 현재 창 닫기
-      window.close();
-
-      // 5. close가 브라우저 정책으로 막히는 경우 대비
+      // 4. 부모창 이동 요청이 먼저 전달되도록 약간 딜레이 후 닫기
       setTimeout(() => {
-        if (!window.closed) {
-          alert("저장되었습니다. 창이 자동으로 닫히지 않으면 직접 닫아주세요.");
-        }
+        window.close();
+
+        setTimeout(() => {
+          if (!window.closed) {
+            alert(
+              "저장되었습니다. 창이 자동으로 닫히지 않으면 직접 닫아주세요.",
+            );
+          }
+        }, 300);
       }, 300);
     } catch (error) {
       console.error("처리 실패:", error);

@@ -11,7 +11,6 @@ export default function NoticePage() {
     }
 
     const surveyUrl = `${window.location.origin}/survey?cukey=${encodeURIComponent(cukey)}`;
-
     window.location.href = surveyUrl;
   };
 
