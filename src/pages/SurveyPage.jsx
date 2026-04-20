@@ -131,21 +131,26 @@ function SurveyPage() {
         return;
       }
 
-      // 3. 부모창(talkio) 새로고침 대신 같은 URL로 다시 이동
+      // 3. 부모창 새로고침 시도
+      console.log("window.opener:", window.opener);
+      console.log("window.opener exists:", !!window.opener);
+      console.log("window.opener closed:", window.opener?.closed);
+
       if (window.opener && !window.opener.closed) {
         try {
-          window.opener.location.replace(
-            "https://talkio.co.kr/login/login_notice/",
-          );
-        } catch (moveError) {
-          console.error("부모창 이동 실패:", moveError);
+          window.opener.location.reload();
+        } catch (reloadError) {
+          console.error("부모창 새로고침 실패:", reloadError);
         }
+      } else {
+        console.warn("window.opener를 찾지 못했습니다.");
       }
 
-      // 4. 부모창 이동 요청이 먼저 전달되도록 약간 딜레이 후 닫기
+      // 4. 부모창 새로고침 요청이 먼저 반영될 수 있게 약간 기다린 뒤 닫기
       setTimeout(() => {
         window.close();
 
+        // 닫기 실패 대비
         setTimeout(() => {
           if (!window.closed) {
             alert(
@@ -153,7 +158,7 @@ function SurveyPage() {
             );
           }
         }, 300);
-      }, 300);
+      }, 800);
     } catch (error) {
       console.error("처리 실패:", error);
       alert("저장에 실패했습니다");
