@@ -14,7 +14,7 @@ export const requestExternalServerOk = async (payload) => {
     });
   }
 
-  const response = await fetch("https://talkio.co.kr/api/user_survey/2319/", {
+  const response = await fetch("/.netlify/functions/user-survey", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -31,14 +31,30 @@ export const requestExternalServerOk = async (payload) => {
     data = {};
   }
 
-  const textResult = rawText.trim().toUpperCase();
-  const jsonResult =
-    typeof data.result === "string" ? data.result.toUpperCase() : "";
+  const normalizedText = rawText.trim().toUpperCase();
+  const normalizedResult =
+    typeof data.result === "string" ? data.result.trim().toUpperCase() : "";
+  const normalizedStatus =
+    typeof data.status === "string" ? data.status.trim().toUpperCase() : "";
+  const normalizedMessage =
+    typeof data.message === "string" ? data.message.trim().toUpperCase() : "";
+
+  const isSuccess =
+    response.ok &&
+    (normalizedText === "OK" ||
+      normalizedResult === "OK" ||
+      normalizedStatus === "OK" ||
+      normalizedMessage === "OK");
 
   return {
-    ok: response.ok && (textResult === "OK" || jsonResult === "OK"),
-    result: jsonResult || textResult,
+    ok: isSuccess,
+    result:
+      normalizedResult ||
+      normalizedStatus ||
+      normalizedMessage ||
+      normalizedText,
     data,
     rawText,
+    status: response.status,
   };
 };
