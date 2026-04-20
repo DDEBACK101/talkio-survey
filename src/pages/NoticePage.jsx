@@ -1,6 +1,16 @@
+import { useSearchParams } from "react-router-dom";
+
 export default function NoticePage() {
+  const [searchParams] = useSearchParams();
+  const userKey = searchParams.get("userkey")?.trim() || "";
+
   const handleOpenSurveyPopup = () => {
-    const surveyUrl = `${window.location.origin}/survey`;
+    if (!userKey) {
+      alert("userkey가 없습니다. 올바른 경로로 접속해주세요.");
+      return;
+    }
+
+    const surveyUrl = `${window.location.origin}/survey?userkey=${encodeURIComponent(userKey)}`;
 
     const popup = window.open(
       surveyUrl,
@@ -18,6 +28,10 @@ export default function NoticePage() {
 
   return (
     <div className="notice-page">
+      <div style={{ marginBottom: "12px", fontSize: "14px" }}>
+        현재 userKey: {userKey || "없음"}
+      </div>
+
       <button className="notice-button" onClick={handleOpenSurveyPopup}>
         설문조사하러 가기
       </button>

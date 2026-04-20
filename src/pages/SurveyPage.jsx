@@ -1,11 +1,16 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { surveyData } from "../data/surveyData";
 import { supabase } from "../lib/supabase.jsx";
 import { requestExternalServerOk } from "../api/externalApi.jsx";
+import "../index.css";
 
-export default function SurveyPage() {
+function SurveyPage() {
   const [answers, setAnswers] = useState({});
   const [etcInputs, setEtcInputs] = useState({});
+  const [searchParams] = useSearchParams();
+
+  const userKey = searchParams.get("userkey")?.trim() || "";
 
   const allQuestions = useMemo(() => {
     return surveyData.sections.flatMap((section) => section.questions);
@@ -83,34 +88,25 @@ export default function SurveyPage() {
     });
   };
 
-  const handleSuccessClose = () => {
-    alert("저장되었습니다.");
-
-    if (window.opener && !window.opener.closed) {
-      try {
-        window.opener.location.reload();
-      } catch (error) {
-        console.error("오프너 새로고침 실패:", error);
-      }
-    }
-
-    window.close();
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!userKey) {
+      alert("userkey가 없습니다. 올바른 경로로 접속해주세요.");
+      return;
+    }
 
     const isValid = validateForm();
     if (!isValid) return;
 
     const submitData = {
       surveyTitle: surveyData.surveyTitle,
+      userKey,
       submittedAt: new Date().toISOString(),
       responses: buildSubmitData(),
     };
 
     try {
-      // 1) 다른 서버에서 OK를 받았다고 가정하는 AJAX(fetch) 로직
       const externalResult = await requestExternalServerOk(submitData);
 
       if (!externalResult.ok) {
@@ -118,21 +114,27 @@ export default function SurveyPage() {
         return;
       }
 
-      // 2) 외부 OK를 받았을 때만 Supabase 저장
       const { error } = await supabase.from("survey_responses").insert([
         {
           survey_title: surveyData.surveyTitle,
+          user_key: userKey,
           responses: submitData.responses,
         },
       ]);
 
       if (error) {
-        console.error("Supabase 저장 실패:", error);
+        console.error("저장 실패:", error);
         alert("저장에 실패했습니다");
         return;
       }
 
-      handleSuccessClose();
+      alert("저장되었습니다");
+
+      if (window.opener && !window.opener.closed) {
+        window.opener.location.reload();
+      }
+
+      window.close();
     } catch (error) {
       console.error("처리 실패:", error);
       alert("저장에 실패했습니다");
@@ -142,6 +144,10 @@ export default function SurveyPage() {
   return (
     <div className="survey-container popup-survey-container">
       <h1 className="survey-title">{surveyData.surveyTitle}</h1>
+
+      <div style={{ marginBottom: "12px", fontSize: "14px" }}>
+        userKey: {userKey || "없음"}
+      </div>
 
       <div className="progress-box">
         <div className="progress-text">
@@ -211,3 +217,5 @@ export default function SurveyPage() {
     </div>
   );
 }
+
+export default SurveyPage;
