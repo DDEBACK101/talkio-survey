@@ -11,6 +11,18 @@ function SurveyPage() {
   const [searchParams] = useSearchParams();
 
   const cukey = searchParams.get("cukey")?.trim() || "";
+  const rawParentOrigin = searchParams.get("parentOrigin")?.trim() || "";
+
+  const parentOrigin = useMemo(() => {
+    try {
+      return rawParentOrigin
+        ? new URL(rawParentOrigin).origin
+        : window.location.origin;
+    } catch (error) {
+      console.warn("parentOrigin 파싱 실패:", error);
+      return window.location.origin;
+    }
+  }, [rawParentOrigin]);
 
   const allQuestions = useMemo(() => {
     return surveyData.sections.flatMap((section) => section.questions);
@@ -30,9 +42,10 @@ function SurveyPage() {
     return true;
   }).length;
 
-  const progressPercent = Math.round(
-    (answeredCount / totalQuestionCount) * 100,
-  );
+  const progressPercent =
+    totalQuestionCount > 0
+      ? Math.round((answeredCount / totalQuestionCount) * 100)
+      : 0;
 
   const handleChange = (questionId, value) => {
     setAnswers((prev) => ({
@@ -131,22 +144,32 @@ function SurveyPage() {
         return;
       }
 
-      // 3. 부모창 새로고침 시도
+      // 3. 부모창에 설문 완료 메시지 전달
       console.log("window.opener:", window.opener);
       console.log("window.opener exists:", !!window.opener);
       console.log("window.opener closed:", window.opener?.closed);
+      console.log("parentOrigin:", parentOrigin);
 
       if (window.opener && !window.opener.closed) {
         try {
-          window.opener.location.reload();
-        } catch (reloadError) {
-          console.error("부모창 새로고침 실패:", reloadError);
+          window.opener.postMessage(
+            {
+              type: "SURVEY_COMPLETED",
+              cukey,
+              submittedAt: submitData.submittedAt,
+            },
+            parentOrigin,
+          );
+
+          console.log("[SurveyPage] 부모창으로 설문 완료 메시지 전송 성공");
+        } catch (messageError) {
+          console.error("부모창 메시지 전송 실패:", messageError);
         }
       } else {
         console.warn("window.opener를 찾지 못했습니다.");
       }
 
-      // 4. 부모창 새로고침 요청이 먼저 반영될 수 있게 약간 기다린 뒤 닫기
+      // 4. 메시지 전달 후 창 닫기
       setTimeout(() => {
         window.close();
 
@@ -158,7 +181,7 @@ function SurveyPage() {
             );
           }
         }, 300);
-      }, 800);
+      }, 500);
     } catch (error) {
       console.error("처리 실패:", error);
       alert("저장에 실패했습니다");
