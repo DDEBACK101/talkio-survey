@@ -11,29 +11,14 @@ function SurveyPage() {
   const [searchParams] = useSearchParams();
 
   const cukey = searchParams.get("cukey")?.trim() || "";
-  const returnUrlParam = searchParams.get("returnUrl")?.trim() || "";
-
-  const safeReturnUrl = useMemo(() => {
-    try {
-      if (returnUrlParam) {
-        return new URL(returnUrlParam, window.location.origin).toString();
-      }
-      return `${window.location.origin}/?cukey=${encodeURIComponent(cukey)}`;
-    } catch (error) {
-      console.warn("[SurveyPage] returnUrl 파싱 실패:", error);
-      return `${window.location.origin}/?cukey=${encodeURIComponent(cukey)}`;
-    }
-  }, [returnUrlParam, cukey]);
 
   useEffect(() => {
     console.group("[SurveyPage] 초기 진입");
     console.log("pathname:", window.location.pathname);
     console.log("search:", window.location.search);
     console.log("cukey:", cukey);
-    console.log("returnUrlParam:", returnUrlParam);
-    console.log("safeReturnUrl:", safeReturnUrl);
     console.groupEnd();
-  }, [cukey, returnUrlParam, safeReturnUrl]);
+  }, [cukey]);
 
   const allQuestions = useMemo(() => {
     return surveyData.sections.flatMap((section) => section.questions);
@@ -43,10 +28,13 @@ function SurveyPage() {
 
   const answeredCount = allQuestions.filter((question) => {
     const selectedValue = answers[question.id];
+
     if (!selectedValue) return false;
+
     if (selectedValue === "기타") {
       return Boolean(etcInputs[question.id]?.trim());
     }
+
     return true;
   }).length;
 
@@ -57,6 +45,7 @@ function SurveyPage() {
 
   const handleChange = (questionId, value) => {
     console.log("[SurveyPage] 답변 선택:", { questionId, value });
+
     setAnswers((prev) => ({
       ...prev,
       [questionId]: value,
@@ -65,6 +54,7 @@ function SurveyPage() {
 
   const handleEtcChange = (questionId, value) => {
     console.log("[SurveyPage] 기타 입력:", { questionId, value });
+
     setEtcInputs((prev) => ({
       ...prev,
       [questionId]: value,
@@ -89,6 +79,7 @@ function SurveyPage() {
 
     if (unansweredQuestions.length > 0) {
       console.warn("[SurveyPage] 미응답 문항:", unansweredQuestions);
+
       alert(
         `${unansweredQuestions.join(", ")}번 항목을 선택하지 않으셨습니다. 선택해주세요.`,
       );
@@ -152,7 +143,7 @@ function SurveyPage() {
       console.log("2) 외부 서버 응답:", externalResult);
 
       if (!externalResult.ok) {
-        console.error("외부 서버 응답 실패");
+        console.error("외부 서버 응답 실패:", externalResult);
         alert("저장에 실패했습니다");
         console.groupEnd();
         return;
@@ -176,12 +167,13 @@ function SurveyPage() {
 
       console.log("4) Supabase 저장 성공");
 
-      const returnUrlObject = new URL(safeReturnUrl);
-      returnUrlObject.searchParams.set("cukey", cukey);
-      returnUrlObject.searchParams.set("surveyDone", "Y");
-      returnUrlObject.searchParams.set("submittedAt", submitData.submittedAt);
+      const talkioNoticeUrl = "https://talkio.co.kr/login/login_notice/";
 
-      const finalReturnUrl = returnUrlObject.toString();
+      const finalReturnUrl =
+        `${talkioNoticeUrl}` +
+        `?cukey=${encodeURIComponent(cukey)}` +
+        `&surveyDone=Y` +
+        `&submittedAt=${encodeURIComponent(submitData.submittedAt)}`;
 
       console.log("5) 최종 복귀 URL:", finalReturnUrl);
       console.groupEnd();
