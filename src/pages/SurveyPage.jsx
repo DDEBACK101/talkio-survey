@@ -45,21 +45,19 @@ function SurveyPage() {
 
       if (event.data?.type === "REFRESH_PARENT_ACK") {
         console.log("[SurveyPage] 부모창이 REFRESH_PARENT를 정상 수신함");
-        console.log("[SurveyPage] 3초 뒤 창 닫기");
+        console.log("[SurveyPage] 즉시 창 닫기");
         console.groupEnd();
-
+        
+        console.log("[SurveyPage] window.close() 실행");
+        window.close();
+            
         setTimeout(() => {
-          console.log("[SurveyPage] window.close() 실행");
-          window.close();
-
-          setTimeout(() => {
-            if (!window.closed) {
-              alert(
-                "저장 및 부모창 전달 요청이 완료되었습니다. 창이 자동으로 닫히지 않으면 직접 닫아주세요.",
-              );
-            }
-          }, 300);
-        }, 3000);
+          if (!window.closed) {
+            alert(
+              "저장 및 부모창 전달 요청이 완료되었습니다. 창이 자동으로 닫히지 않으면 직접 닫아주세요.",
+            );
+          }
+        }, 300);
 
         return;
       }
