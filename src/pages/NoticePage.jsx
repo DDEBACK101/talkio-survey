@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 
 const SURVEY_ORIGIN = "https://talkio-survey.netlify.app";
-const SURVEY_PATH = "/survey";
+const TALKIO_ORIGIN = "https://talkio.co.kr";
 
 export default function NoticePage() {
   const [searchParams] = useSearchParams();
@@ -14,8 +14,10 @@ export default function NoticePage() {
       console.log("event.origin:", event.origin);
       console.log("event.data:", event.data);
       console.log("current origin:", window.location.origin);
+      console.log("window.opener:", window.opener);
+      console.log("window.opener exists:", !!window.opener);
+      console.log("window.opener closed:", window.opener?.closed);
 
-      // survey 페이지에서 온 메시지만 허용
       if (event.origin !== SURVEY_ORIGIN) {
         console.warn("[NoticePage] 허용되지 않은 origin");
         console.groupEnd();
@@ -36,7 +38,7 @@ export default function NoticePage() {
           targetPage: event.data.targetPage,
         });
 
-        // 자식창에게 ACK 전달
+        // 1) SurveyPage에 ACK 반환
         try {
           if (event.source) {
             event.source.postMessage(
@@ -47,7 +49,7 @@ export default function NoticePage() {
               },
               event.origin,
             );
-            console.log("[NoticePage] ACK 전송 완료");
+            console.log("[NoticePage] SurveyPage로 ACK 전송 완료");
           } else {
             console.warn("[NoticePage] event.source가 없어 ACK 전송 불가");
           }
@@ -55,11 +57,39 @@ export default function NoticePage() {
           console.error("[NoticePage] ACK 전송 실패:", ackError);
         }
 
-        console.log("[NoticePage] 1초 후 새로고침");
+        // 2) Talkio 부모창으로 다시 전달
+        try {
+          if (window.opener && !window.opener.closed) {
+            const forwardPayload = {
+              type: "REFRESH_TALKIO_NOTICE",
+              cukey: event.data.cukey,
+              submittedAt: event.data.submittedAt,
+              forwardedAt: new Date().toISOString(),
+              source: "talkio-survey-notice-bridge",
+            };
+
+            console.log("[NoticePage] Talkio 부모창 전달 직전");
+            console.log("targetOrigin:", TALKIO_ORIGIN);
+            console.log("forwardPayload:", forwardPayload);
+
+            window.opener.postMessage(forwardPayload, TALKIO_ORIGIN);
+
+            console.log("[NoticePage] Talkio 부모창 전달 완료");
+            console.log("[NoticePage] 1초 뒤 NoticePage 닫기");
+          } else {
+            console.warn(
+              "[NoticePage] Talkio 부모창(opener)을 찾지 못했습니다.",
+            );
+          }
+        } catch (forwardError) {
+          console.error("[NoticePage] Talkio 부모창 전달 실패:", forwardError);
+        }
+
         console.groupEnd();
 
         setTimeout(() => {
-          window.location.reload();
+          console.log("[NoticePage] window.close() 실행");
+          window.close();
         }, 1000);
 
         return;
@@ -86,11 +116,10 @@ export default function NoticePage() {
       return;
     }
 
-    // 중요: targetOrigin 용으로 부모 origin만 전달
     const parentOrigin = window.location.origin;
 
     const surveyUrl =
-      `${SURVEY_ORIGIN}${SURVEY_PATH}` +
+      `${SURVEY_ORIGIN}/survey` +
       `?cukey=${encodeURIComponent(cukey)}` +
       `&parentOrigin=${encodeURIComponent(parentOrigin)}`;
 

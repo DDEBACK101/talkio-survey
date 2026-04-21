@@ -191,8 +191,6 @@ function SurveyPage() {
       try {
         console.log("[SurveyPage] postMessage 전송 직전");
 
-        // 중요: targetOrigin은 origin만 사용
-        // 예: https://talkio.co.kr
         window.opener.postMessage(payload, parentOrigin);
 
         console.log("[SurveyPage] postMessage 전송 완료");
