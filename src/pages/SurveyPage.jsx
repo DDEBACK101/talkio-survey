@@ -18,25 +18,22 @@ function SurveyPage() {
       if (returnUrlParam) {
         return new URL(returnUrlParam, window.location.origin).toString();
       }
-
       return `${window.location.origin}/?cukey=${encodeURIComponent(cukey)}`;
     } catch (error) {
-      console.warn("[SurveyPage][1] returnUrl 파싱 실패:", error);
+      console.warn("[SurveyPage] returnUrl 파싱 실패:", error);
       return `${window.location.origin}/?cukey=${encodeURIComponent(cukey)}`;
     }
   }, [returnUrlParam, cukey]);
 
   useEffect(() => {
-    const paramsObject = Object.fromEntries(searchParams.entries());
-
-    console.log("[SurveyPage][2] 페이지 진입");
-    console.log("[SurveyPage][3] 현재 경로:", window.location.pathname);
-    console.log("[SurveyPage][4] 현재 쿼리:", window.location.search);
-    console.log("[SurveyPage][5] 파라미터 전체:", paramsObject);
-    console.log("[SurveyPage][6] cukey:", cukey);
-    console.log("[SurveyPage][7] returnUrlParam:", returnUrlParam);
-    console.log("[SurveyPage][8] safeReturnUrl:", safeReturnUrl);
-  }, [searchParams, cukey, returnUrlParam, safeReturnUrl]);
+    console.group("[SurveyPage] 초기 진입");
+    console.log("pathname:", window.location.pathname);
+    console.log("search:", window.location.search);
+    console.log("cukey:", cukey);
+    console.log("returnUrlParam:", returnUrlParam);
+    console.log("safeReturnUrl:", safeReturnUrl);
+    console.groupEnd();
+  }, [cukey, returnUrlParam, safeReturnUrl]);
 
   const allQuestions = useMemo(() => {
     return surveyData.sections.flatMap((section) => section.questions);
@@ -46,13 +43,10 @@ function SurveyPage() {
 
   const answeredCount = allQuestions.filter((question) => {
     const selectedValue = answers[question.id];
-
     if (!selectedValue) return false;
-
     if (selectedValue === "기타") {
       return Boolean(etcInputs[question.id]?.trim());
     }
-
     return true;
   }).length;
 
@@ -62,8 +56,7 @@ function SurveyPage() {
       : 0;
 
   const handleChange = (questionId, value) => {
-    console.log("[SurveyPage][9] 답변 선택", { questionId, value });
-
+    console.log("[SurveyPage] 답변 선택:", { questionId, value });
     setAnswers((prev) => ({
       ...prev,
       [questionId]: value,
@@ -71,6 +64,7 @@ function SurveyPage() {
   };
 
   const handleEtcChange = (questionId, value) => {
+    console.log("[SurveyPage] 기타 입력:", { questionId, value });
     setEtcInputs((prev) => ({
       ...prev,
       [questionId]: value,
@@ -78,8 +72,6 @@ function SurveyPage() {
   };
 
   const validateForm = () => {
-    console.log("[SurveyPage][10] 유효성 검사 시작");
-
     const unansweredQuestions = [];
 
     for (const question of allQuestions) {
@@ -96,20 +88,19 @@ function SurveyPage() {
     }
 
     if (unansweredQuestions.length > 0) {
-      console.warn("[SurveyPage][11] 미응답 문항:", unansweredQuestions);
-
+      console.warn("[SurveyPage] 미응답 문항:", unansweredQuestions);
       alert(
         `${unansweredQuestions.join(", ")}번 항목을 선택하지 않으셨습니다. 선택해주세요.`,
       );
       return false;
     }
 
-    console.log("[SurveyPage][12] 유효성 검사 통과");
+    console.log("[SurveyPage] 유효성 검사 통과");
     return true;
   };
 
   const buildSubmitData = () => {
-    const builtData = allQuestions.map((question) => {
+    const data = allQuestions.map((question) => {
       const selectedValue = answers[question.id];
 
       return {
@@ -121,25 +112,30 @@ function SurveyPage() {
       };
     });
 
-    console.log("[SurveyPage][13] 제출 데이터 생성 완료");
-    console.log(builtData);
+    console.group("[SurveyPage] buildSubmitData 결과");
+    console.log(data);
+    console.groupEnd();
 
-    return builtData;
+    return data;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log("[SurveyPage][14] 제출 버튼 클릭");
+    console.group("[SurveyPage] 제출 시작");
 
     if (!cukey) {
-      console.warn("[SurveyPage][15] cukey 없음");
+      console.warn("cukey 없음");
       alert("cukey가 없습니다. 올바른 경로로 접속해주세요.");
+      console.groupEnd();
       return;
     }
 
     const isValid = validateForm();
-    if (!isValid) return;
+    if (!isValid) {
+      console.groupEnd();
+      return;
+    }
 
     const submitData = {
       surveyTitle: surveyData.surveyTitle,
@@ -148,27 +144,21 @@ function SurveyPage() {
       responses: buildSubmitData(),
     };
 
-    console.log("[SurveyPage][16] 최종 submitData");
-    console.log(submitData);
+    console.log("submitData:", submitData);
 
     try {
-      console.log("[SurveyPage][17] 외부 서버 요청 시작");
-
-      // 1. 외부 서버 AJAX 통신
+      console.log("1) 외부 서버 요청 시작");
       const externalResult = await requestExternalServerOk(submitData);
-
-      console.log("[SurveyPage][18] 외부 서버 응답 도착");
-      console.log(externalResult);
+      console.log("2) 외부 서버 응답:", externalResult);
 
       if (!externalResult.ok) {
-        console.error("[SurveyPage][19] 외부 서버 응답 실패:", externalResult);
+        console.error("외부 서버 응답 실패");
         alert("저장에 실패했습니다");
+        console.groupEnd();
         return;
       }
 
-      console.log("[SurveyPage][20] Supabase 저장 시작");
-
-      // 2. 외부 서버 OK일 때만 Supabase 저장
+      console.log("3) Supabase 저장 시작");
       const { error } = await supabase.from("survey_responses").insert([
         {
           survey_title: surveyData.surveyTitle,
@@ -178,14 +168,14 @@ function SurveyPage() {
       ]);
 
       if (error) {
-        console.error("[SurveyPage][21] Supabase 저장 실패:", error);
+        console.error("4) Supabase 저장 실패:", error);
         alert("저장에 실패했습니다");
+        console.groupEnd();
         return;
       }
 
-      console.log("[SurveyPage][22] Supabase 저장 성공");
+      console.log("4) Supabase 저장 성공");
 
-      // 3. 저장 성공 후 NoticePage로 다시 이동
       const returnUrlObject = new URL(safeReturnUrl);
       returnUrlObject.searchParams.set("cukey", cukey);
       returnUrlObject.searchParams.set("surveyDone", "Y");
@@ -193,18 +183,13 @@ function SurveyPage() {
 
       const finalReturnUrl = returnUrlObject.toString();
 
-      console.log("[SurveyPage][23] NoticePage 복귀용 데이터");
-      console.log({
-        cukey,
-        submittedAt: submitData.submittedAt,
-        safeReturnUrl,
-        finalReturnUrl,
-      });
+      console.log("5) 최종 복귀 URL:", finalReturnUrl);
+      console.groupEnd();
 
-      console.log("[SurveyPage][24] NoticePage로 같은 창 이동 시작");
       window.location.href = finalReturnUrl;
     } catch (error) {
-      console.error("[SurveyPage][25] 처리 실패:", error);
+      console.error("[SurveyPage] 처리 실패:", error);
+      console.groupEnd();
       alert("저장에 실패했습니다");
     }
   };
