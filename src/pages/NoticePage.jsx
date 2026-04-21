@@ -3,76 +3,74 @@ import { useSearchParams } from "react-router-dom";
 
 export default function NoticePage() {
   const [searchParams] = useSearchParams();
-  const cukey = searchParams.get("cukey")?.trim() || "";
 
-  /**
-   * survey가 같은 도메인에서 동작하면 그대로 사용
-   * 만약 survey가 다른 도메인이라면 아래 값을 실제 survey 도메인으로 변경
-   * 예: const surveyBaseUrl = "https://survey.example.com";
-   */
-  const surveyBaseUrl = window.location.origin;
-  const surveyOrigin = new URL(surveyBaseUrl).origin;
-  const parentOrigin = window.location.origin;
+  const cukey = searchParams.get("cukey")?.trim() || "";
+  const surveyDone = searchParams.get("surveyDone")?.trim() || "";
+  const submittedAt = searchParams.get("submittedAt")?.trim() || "";
+
+  // NoticePage가 현재 "/" 경로라고 가정
+  // 경로가 다르면 여기만 바꾸면 됨
+  const noticePath = "/";
 
   useEffect(() => {
-    const handleMessage = (event) => {
-      // survey 페이지에서 보낸 메시지만 허용
-      if (event.origin !== surveyOrigin) {
-        return;
-      }
+    const paramsObject = Object.fromEntries(searchParams.entries());
 
-      const data = event.data;
+    console.log("[NoticePage][1] 페이지 진입");
+    console.log("[NoticePage][2] 현재 경로:", window.location.pathname);
+    console.log("[NoticePage][3] 현재 쿼리:", window.location.search);
+    console.log("[NoticePage][4] 파라미터 전체:", paramsObject);
+    console.log("[NoticePage][5] cukey:", cukey);
+    console.log("[NoticePage][6] surveyDone:", surveyDone);
+    console.log("[NoticePage][7] submittedAt:", submittedAt);
 
-      if (!data || typeof data !== "object") {
-        return;
-      }
+    if (!cukey) {
+      console.warn("[NoticePage][8] cukey 없음");
+      return;
+    }
 
-      if (data.type !== "SURVEY_COMPLETED") {
-        return;
-      }
+    // SurveyPage에서 저장 완료 후 다시 돌아왔을 때
+    if (surveyDone === "Y") {
+      const cleanUrl =
+        `${window.location.origin}${noticePath}` +
+        `?cukey=${encodeURIComponent(cukey)}`;
 
-      // 혹시 다른 사용자/다른 설문 메시지가 섞이는 것 방지
-      if (cukey && data.cukey && cukey !== data.cukey) {
-        console.warn("cukey가 일치하지 않는 메시지입니다.", data);
-        return;
-      }
+      console.log("[NoticePage][9] 설문 완료 후 NoticePage 복귀 감지");
+      console.log("[NoticePage][10] 최종 새로고침용 URL:", cleanUrl);
+      console.log("[NoticePage][11] 0.3초 후 최종 새로고침 실행");
 
-      console.log("[NoticePage] 설문 완료 메시지 수신:", data);
-
-      // 부모 페이지 새로고침
-      window.location.reload();
-    };
-
-    window.addEventListener("message", handleMessage);
-
-    return () => {
-      window.removeEventListener("message", handleMessage);
-    };
-  }, [cukey, surveyOrigin]);
+      setTimeout(() => {
+        window.location.replace(cleanUrl);
+      }, 300);
+    }
+  }, [searchParams, cukey, surveyDone, submittedAt]);
 
   const handleMoveSurveyPage = () => {
+    console.log("[NoticePage][12] 설문조사 버튼 클릭");
+
     if (!cukey) {
+      console.warn("[NoticePage][13] cukey가 없어서 이동 중단");
       alert("cukey가 없습니다. 올바른 경로로 접속해주세요.");
       return;
     }
 
+    const returnUrl =
+      `${window.location.origin}${noticePath}` +
+      `?cukey=${encodeURIComponent(cukey)}`;
+
     const surveyUrl =
-      `${surveyBaseUrl}/survey` +
+      `${window.location.origin}/survey` +
       `?cukey=${encodeURIComponent(cukey)}` +
-      `&parentOrigin=${encodeURIComponent(parentOrigin)}`;
+      `&returnUrl=${encodeURIComponent(returnUrl)}`;
 
-    const popup = window.open(
+    console.log("[NoticePage][14] SurveyPage 이동용 데이터");
+    console.log({
+      cukey,
+      returnUrl,
       surveyUrl,
-      "talkioSurveyPopup",
-      "width=900,height=860,left=100,top=50,resizable=yes,scrollbars=yes",
-    );
+    });
 
-    if (!popup) {
-      alert("팝업이 차단되었습니다. 팝업 허용 후 다시 시도해주세요.");
-      return;
-    }
-
-    popup.focus();
+    console.log("[NoticePage][15] SurveyPage로 같은 창 이동 시작");
+    window.location.href = surveyUrl;
   };
 
   return (
