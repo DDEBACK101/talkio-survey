@@ -11,16 +11,18 @@ function SurveyPage() {
   const [searchParams] = useSearchParams();
 
   const cukey = searchParams.get("cukey")?.trim() || "";
+  const parentOrigin = searchParams.get("parentOrigin")?.trim() || "";
 
   useEffect(() => {
     console.group("[SurveyPage] 초기 진입");
     console.log("pathname:", window.location.pathname);
     console.log("search:", window.location.search);
     console.log("cukey:", cukey);
+    console.log("parentOrigin:", parentOrigin);
     console.log("window.opener:", window.opener);
     console.log("has opener:", !!window.opener);
     console.groupEnd();
-  }, [cukey]);
+  }, [cukey, parentOrigin]);
 
   const allQuestions = useMemo(() => {
     return surveyData.sections.flatMap((section) => section.questions);
@@ -118,6 +120,14 @@ function SurveyPage() {
     console.log("window.opener:", window.opener);
     console.log("window.opener exists:", !!window.opener);
     console.log("window.opener closed:", window.opener?.closed);
+    console.log("parentOrigin:", parentOrigin);
+
+    if (!parentOrigin) {
+      console.error("[SurveyPage] parentOrigin이 없습니다.");
+      console.groupEnd();
+      alert("부모창 origin 정보가 없습니다.");
+      return;
+    }
 
     if (window.opener && !window.opener.closed) {
       try {
@@ -127,7 +137,7 @@ function SurveyPage() {
             cukey,
             submittedAt,
           },
-          "https://talkio.co.kr",
+          parentOrigin,
         );
 
         console.log("[SurveyPage] postMessage 전송 성공");
@@ -163,7 +173,7 @@ function SurveyPage() {
     console.group("[SurveyPage] 제출 시작");
 
     if (!cukey) {
-      console.warn("cukey 없음");
+      console.warn("[SurveyPage] cukey 없음");
       alert("cukey가 없습니다. 올바른 경로로 접속해주세요.");
       console.groupEnd();
       return;
@@ -190,7 +200,7 @@ function SurveyPage() {
       console.log("2) 외부 서버 응답:", externalResult);
 
       if (!externalResult.ok) {
-        console.error("외부 서버 응답 실패:", externalResult);
+        console.error("[SurveyPage] 외부 서버 응답 실패:", externalResult);
         alert("저장에 실패했습니다");
         console.groupEnd();
         return;
@@ -206,7 +216,7 @@ function SurveyPage() {
       ]);
 
       if (error) {
-        console.error("4) Supabase 저장 실패:", error);
+        console.error("[SurveyPage] Supabase 저장 실패:", error);
         alert("저장에 실패했습니다");
         console.groupEnd();
         return;

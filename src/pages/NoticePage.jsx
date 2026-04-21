@@ -10,8 +10,10 @@ export default function NoticePage() {
       console.group("[NoticePage] message 수신");
       console.log("event.origin:", event.origin);
       console.log("event.data:", event.data);
+      console.log("window.location.origin:", window.location.origin);
 
-      if (event.origin !== "https://talkio-survey.netlify.app") {
+      // 현재는 NoticePage가 부모이고, SurveyPage도 같은 Netlify origin 기준
+      if (event.origin !== window.location.origin) {
         console.warn("[NoticePage] 허용되지 않은 origin");
         console.groupEnd();
         return;
@@ -60,9 +62,15 @@ export default function NoticePage() {
       return;
     }
 
-    const surveyUrl = `https://talkio-survey.netlify.app/survey?cukey=${encodeURIComponent(cukey)}`;
+    const parentOrigin = window.location.origin;
+
+    const surveyUrl =
+      `${window.location.origin}/survey` +
+      `?cukey=${encodeURIComponent(cukey)}` +
+      `&parentOrigin=${encodeURIComponent(parentOrigin)}`;
 
     console.log("cukey:", cukey);
+    console.log("parentOrigin:", parentOrigin);
     console.log("surveyUrl:", surveyUrl);
 
     const popup = window.open(
