@@ -106,7 +106,7 @@ export default function NoticePage() {
           }, 1000);
         } else {
           console.warn(
-            "[NoticePage] 부모창 전달 실패 - 디버깅을 위해 창을 닫지 않습니다.",
+            "[NoticePage] 부모창 전달 실패 - 창을 닫지 않고 유지합니다.",
           );
           console.groupEnd();
         }
@@ -164,6 +164,8 @@ export default function NoticePage() {
     console.groupEnd();
   };
 
+  /*
+  // 테스트용: 부모창으로 직접 이벤트 전송
   const handleSendTestEvent = () => {
     const testPayload = {
       type: "TEST_EVENT_FROM_NOTICE",
@@ -176,9 +178,7 @@ export default function NoticePage() {
     const ok = postToOpener(testPayload, "테스트 이벤트 전송");
 
     if (ok) {
-      alert(
-        "테스트 이벤트를 부모창으로 전송했습니다. 부모창 콘솔을 확인해주세요.",
-      );
+      alert("테스트 이벤트를 부모창으로 전송했습니다. 부모창 콘솔을 확인해주세요.");
     } else {
       alert(
         "부모창(opener)을 찾지 못했습니다. 부모창의 여는 방식(window.open / target=_blank)을 먼저 확인해주세요.",
@@ -186,6 +186,7 @@ export default function NoticePage() {
     }
   };
 
+  // 테스트용: opener 상태 확인
   const handleCheckOpener = () => {
     console.group("[NoticePage] opener 상태 확인");
     console.log("current href:", window.location.href);
@@ -201,6 +202,7 @@ export default function NoticePage() {
       alert("opener가 없습니다. 부모창 여는 방식 문제일 가능성이 큽니다.");
     }
   };
+  */
 
   return (
     <div className="notice-page">
@@ -208,6 +210,7 @@ export default function NoticePage() {
         설문조사하러 가기
       </button>
 
+      {/*
       <button className="notice-button" onClick={handleSendTestEvent}>
         이벤트 전송
       </button>
@@ -215,6 +218,7 @@ export default function NoticePage() {
       <button className="notice-button" onClick={handleCheckOpener}>
         opener 확인
       </button>
+      */}
     </div>
   );
 }

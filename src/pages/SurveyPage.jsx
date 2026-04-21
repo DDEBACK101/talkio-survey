@@ -55,7 +55,7 @@ function SurveyPage() {
           setTimeout(() => {
             if (!window.closed) {
               alert(
-                "저장 및 부모창 새로고침 요청이 완료되었습니다. 창이 자동으로 닫히지 않으면 직접 닫아주세요.",
+                "저장 및 부모창 전달 요청이 완료되었습니다. 창이 자동으로 닫히지 않으면 직접 닫아주세요.",
               );
             }
           }, 300);
@@ -171,7 +171,7 @@ function SurveyPage() {
       type: "REFRESH_PARENT",
       cukey,
       submittedAt,
-      targetPage: "https://talkio.co.kr/login/login_notice/",
+      targetPage: "https://talkio.co.kr/hub2/xtest/survey/",
     };
 
     console.log("parentOrigin:", parentOrigin);
@@ -190,9 +190,7 @@ function SurveyPage() {
     if (window.opener && !window.opener.closed) {
       try {
         console.log("[SurveyPage] postMessage 전송 직전");
-
         window.opener.postMessage(payload, parentOrigin);
-
         console.log("[SurveyPage] postMessage 전송 완료");
         console.log("[SurveyPage] 이제 부모창 ACK를 기다립니다.");
         console.groupEnd();
