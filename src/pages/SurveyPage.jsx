@@ -17,6 +17,8 @@ function SurveyPage() {
     console.log("pathname:", window.location.pathname);
     console.log("search:", window.location.search);
     console.log("cukey:", cukey);
+    console.log("window.opener:", window.opener);
+    console.log("has opener:", !!window.opener);
     console.groupEnd();
   }, [cukey]);
 
@@ -110,6 +112,51 @@ function SurveyPage() {
     return data;
   };
 
+  const refreshParentAndClose = (submittedAt) => {
+    console.group("[SurveyPage] 부모창 새로고침 요청");
+
+    console.log("window.opener:", window.opener);
+    console.log("window.opener exists:", !!window.opener);
+    console.log("window.opener closed:", window.opener?.closed);
+
+    if (window.opener && !window.opener.closed) {
+      try {
+        window.opener.postMessage(
+          {
+            type: "REFRESH_PARENT",
+            cukey,
+            submittedAt,
+          },
+          "https://talkio.co.kr",
+        );
+
+        console.log("[SurveyPage] postMessage 전송 성공");
+        console.log("[SurveyPage] 0.5초 후 창 닫기");
+        console.groupEnd();
+
+        setTimeout(() => {
+          window.close();
+
+          setTimeout(() => {
+            if (!window.closed) {
+              alert(
+                "저장되었습니다. 창이 자동으로 닫히지 않으면 직접 닫아주세요.",
+              );
+            }
+          }, 300);
+        }, 500);
+      } catch (error) {
+        console.error("[SurveyPage] postMessage 전송 실패:", error);
+        console.groupEnd();
+        alert("저장은 완료되었지만 부모창 새로고침 요청에 실패했습니다.");
+      }
+    } else {
+      console.warn("[SurveyPage] opener를 찾지 못했습니다.");
+      console.groupEnd();
+      alert("저장은 완료되었지만 부모창을 찾지 못했습니다.");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -166,19 +213,10 @@ function SurveyPage() {
       }
 
       console.log("4) Supabase 저장 성공");
-
-      const talkioNoticeUrl = "https://talkio.co.kr/login/login_notice/";
-
-      const finalReturnUrl =
-        `${talkioNoticeUrl}` +
-        `?cukey=${encodeURIComponent(cukey)}` +
-        `&surveyDone=Y` +
-        `&submittedAt=${encodeURIComponent(submitData.submittedAt)}`;
-
-      console.log("5) 최종 복귀 URL:", finalReturnUrl);
+      console.log("5) 부모창 새로고침 요청 준비");
       console.groupEnd();
 
-      window.location.href = finalReturnUrl;
+      refreshParentAndClose(submitData.submittedAt);
     } catch (error) {
       console.error("[SurveyPage] 처리 실패:", error);
       console.groupEnd();

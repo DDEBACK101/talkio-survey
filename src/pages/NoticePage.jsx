@@ -3,74 +3,84 @@ import { useSearchParams } from "react-router-dom";
 
 export default function NoticePage() {
   const [searchParams] = useSearchParams();
-
   const cukey = searchParams.get("cukey")?.trim() || "";
-  const surveyDone = searchParams.get("surveyDone")?.trim() || "";
-  const submittedAt = searchParams.get("submittedAt")?.trim() || "";
-
-  // NoticePage가 현재 "/" 경로라고 가정
-  // 경로가 다르면 여기만 바꾸면 됨
-  const noticePath = "/";
 
   useEffect(() => {
-    const paramsObject = Object.fromEntries(searchParams.entries());
+    const handleMessage = (event) => {
+      console.group("[NoticePage] message 수신");
+      console.log("event.origin:", event.origin);
+      console.log("event.data:", event.data);
 
-    console.log("[NoticePage][1] 페이지 진입");
-    console.log("[NoticePage][2] 현재 경로:", window.location.pathname);
-    console.log("[NoticePage][3] 현재 쿼리:", window.location.search);
-    console.log("[NoticePage][4] 파라미터 전체:", paramsObject);
-    console.log("[NoticePage][5] cukey:", cukey);
-    console.log("[NoticePage][6] surveyDone:", surveyDone);
-    console.log("[NoticePage][7] submittedAt:", submittedAt);
+      if (event.origin !== "https://talkio-survey.netlify.app") {
+        console.warn("[NoticePage] 허용되지 않은 origin");
+        console.groupEnd();
+        return;
+      }
 
-    if (!cukey) {
-      console.warn("[NoticePage][8] cukey 없음");
-      return;
-    }
+      if (!event.data || typeof event.data !== "object") {
+        console.warn("[NoticePage] data 형식 오류");
+        console.groupEnd();
+        return;
+      }
 
-    // SurveyPage에서 저장 완료 후 다시 돌아왔을 때
-    if (surveyDone === "Y") {
-      const cleanUrl =
-        `${window.location.origin}${noticePath}` +
-        `?cukey=${encodeURIComponent(cukey)}`;
+      if (event.data.type === "REFRESH_PARENT") {
+        console.log("[NoticePage] REFRESH_PARENT 수신");
+        console.log("[NoticePage] 수신 데이터:", {
+          cukey: event.data.cukey,
+          submittedAt: event.data.submittedAt,
+        });
+        console.log("[NoticePage] 1초 후 새로고침");
+        console.groupEnd();
 
-      console.log("[NoticePage][9] 설문 완료 후 NoticePage 복귀 감지");
-      console.log("[NoticePage][10] 최종 새로고침용 URL:", cleanUrl);
-      console.log("[NoticePage][11] 0.3초 후 최종 새로고침 실행");
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
 
-      setTimeout(() => {
-        window.location.replace(cleanUrl);
-      }, 300);
-    }
-  }, [searchParams, cukey, surveyDone, submittedAt]);
+        return;
+      }
+
+      console.log("[NoticePage] 처리 대상 아님");
+      console.groupEnd();
+    };
+
+    window.addEventListener("message", handleMessage);
+
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, []);
 
   const handleMoveSurveyPage = () => {
-    console.log("[NoticePage][12] 설문조사 버튼 클릭");
+    console.group("[NoticePage] 설문 페이지 열기");
 
     if (!cukey) {
-      console.warn("[NoticePage][13] cukey가 없어서 이동 중단");
+      console.warn("[NoticePage] cukey 없음");
       alert("cukey가 없습니다. 올바른 경로로 접속해주세요.");
+      console.groupEnd();
       return;
     }
 
-    const returnUrl =
-      `${window.location.origin}${noticePath}` +
-      `?cukey=${encodeURIComponent(cukey)}`;
+    const surveyUrl = `https://talkio-survey.netlify.app/survey?cukey=${encodeURIComponent(cukey)}`;
 
-    const surveyUrl =
-      `${window.location.origin}/survey` +
-      `?cukey=${encodeURIComponent(cukey)}` +
-      `&returnUrl=${encodeURIComponent(returnUrl)}`;
+    console.log("cukey:", cukey);
+    console.log("surveyUrl:", surveyUrl);
 
-    console.log("[NoticePage][14] SurveyPage 이동용 데이터");
-    console.log({
-      cukey,
-      returnUrl,
+    const popup = window.open(
       surveyUrl,
-    });
+      "talkioSurveyPopup",
+      "width=900,height=860,left=100,top=50,resizable=yes,scrollbars=yes",
+    );
 
-    console.log("[NoticePage][15] SurveyPage로 같은 창 이동 시작");
-    window.location.href = surveyUrl;
+    if (!popup) {
+      console.warn("[NoticePage] 팝업 차단됨");
+      alert("팝업이 차단되었습니다. 팝업 허용 후 다시 시도해주세요.");
+      console.groupEnd();
+      return;
+    }
+
+    console.log("[NoticePage] 팝업 열기 성공");
+    popup.focus();
+    console.groupEnd();
   };
 
   return (
