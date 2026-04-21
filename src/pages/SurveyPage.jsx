@@ -11,16 +11,69 @@ function SurveyPage() {
   const [searchParams] = useSearchParams();
 
   const cukey = searchParams.get("cukey")?.trim() || "";
+  const parentOrigin = searchParams.get("parentOrigin")?.trim() || "";
 
   useEffect(() => {
     console.group("[SurveyPage] 초기 진입");
     console.log("pathname:", window.location.pathname);
     console.log("search:", window.location.search);
     console.log("cukey:", cukey);
+    console.log("parentOrigin:", parentOrigin);
     console.log("window.opener:", window.opener);
     console.log("has opener:", !!window.opener);
     console.groupEnd();
-  }, [cukey]);
+  }, [cukey, parentOrigin]);
+
+  useEffect(() => {
+    const handleAckMessage = (event) => {
+      console.group("[SurveyPage] ACK 수신 확인");
+      console.log("event.origin:", event.origin);
+      console.log("event.data:", event.data);
+      console.log("expected parentOrigin:", parentOrigin);
+
+      if (!parentOrigin) {
+        console.warn("[SurveyPage] parentOrigin 없음");
+        console.groupEnd();
+        return;
+      }
+
+      if (event.origin !== parentOrigin) {
+        console.warn("[SurveyPage] 부모 origin 불일치");
+        console.groupEnd();
+        return;
+      }
+
+      if (event.data?.type === "REFRESH_PARENT_ACK") {
+        console.log("[SurveyPage] 부모창이 REFRESH_PARENT를 정상 수신함");
+        console.log("[SurveyPage] 3초 뒤 창 닫기");
+        console.groupEnd();
+
+        setTimeout(() => {
+          console.log("[SurveyPage] window.close() 실행");
+          window.close();
+
+          setTimeout(() => {
+            if (!window.closed) {
+              alert(
+                "저장 및 부모창 새로고침 요청이 완료되었습니다. 창이 자동으로 닫히지 않으면 직접 닫아주세요.",
+              );
+            }
+          }, 300);
+        }, 3000);
+
+        return;
+      }
+
+      console.log("[SurveyPage] ACK 아님");
+      console.groupEnd();
+    };
+
+    window.addEventListener("message", handleAckMessage);
+
+    return () => {
+      window.removeEventListener("message", handleAckMessage);
+    };
+  }, [parentOrigin]);
 
   const allQuestions = useMemo(() => {
     return surveyData.sections.flatMap((section) => section.questions);
@@ -81,7 +134,6 @@ function SurveyPage() {
 
     if (unansweredQuestions.length > 0) {
       console.warn("[SurveyPage] 미응답 문항:", unansweredQuestions);
-
       alert(
         `${unansweredQuestions.join(", ")}번 항목을 선택하지 않으셨습니다. 선택해주세요.`,
       );
@@ -112,10 +164,9 @@ function SurveyPage() {
     return data;
   };
 
-  const sendRefreshMessageAndClose = (submittedAt) => {
+  const sendRefreshMessage = (submittedAt) => {
     console.group("[SurveyPage] 부모창 메시지 전달 시작");
 
-    const targetOrigin = "https://talkio.co.kr";
     const payload = {
       type: "REFRESH_PARENT",
       cukey,
@@ -123,37 +174,30 @@ function SurveyPage() {
       targetPage: "https://talkio.co.kr/login/login_notice/",
     };
 
-    console.log("targetOrigin:", targetOrigin);
+    console.log("parentOrigin:", parentOrigin);
     console.log("payload:", payload);
     console.log("window.opener:", window.opener);
     console.log("window.opener exists:", !!window.opener);
     console.log("window.opener closed:", window.opener?.closed);
 
+    if (!parentOrigin) {
+      console.error("[SurveyPage] parentOrigin이 없습니다.");
+      console.groupEnd();
+      alert("부모창 origin 정보가 없습니다.");
+      return;
+    }
+
     if (window.opener && !window.opener.closed) {
       try {
         console.log("[SurveyPage] postMessage 전송 직전");
 
-        window.opener.postMessage(payload, targetOrigin);
+        // 중요: targetOrigin은 origin만 사용
+        // 예: https://talkio.co.kr
+        window.opener.postMessage(payload, parentOrigin);
 
         console.log("[SurveyPage] postMessage 전송 완료");
-        console.log(
-          "[SurveyPage] 주의: postMessage는 비동기 전달이라 브라우저 콘솔만으로 수신 성공을 100% 보장하진 않음",
-        );
-        console.log("[SurveyPage] 3초 뒤 창 닫기");
+        console.log("[SurveyPage] 이제 부모창 ACK를 기다립니다.");
         console.groupEnd();
-
-        setTimeout(() => {
-          console.log("[SurveyPage] window.close() 실행");
-          window.close();
-
-          setTimeout(() => {
-            if (!window.closed) {
-              alert(
-                "저장되었습니다. 메시지는 전송 시도되었습니다. 창이 자동으로 닫히지 않으면 직접 닫아주세요.",
-              );
-            }
-          }, 300);
-        }, 3000);
       } catch (error) {
         console.error("[SurveyPage] postMessage 전송 실패:", error);
         console.groupEnd();
@@ -173,8 +217,8 @@ function SurveyPage() {
 
     if (!cukey) {
       console.warn("[SurveyPage] cukey 없음");
-      alert("cukey가 없습니다. 올바른 경로로 접속해주세요.");
       console.groupEnd();
+      alert("cukey가 없습니다. 올바른 경로로 접속해주세요.");
       return;
     }
 
@@ -200,8 +244,8 @@ function SurveyPage() {
 
       if (!externalResult.ok) {
         console.error("[SurveyPage] 외부 서버 응답 실패:", externalResult);
-        alert("저장에 실패했습니다");
         console.groupEnd();
+        alert("저장에 실패했습니다");
         return;
       }
 
@@ -216,8 +260,8 @@ function SurveyPage() {
 
       if (error) {
         console.error("[SurveyPage] Supabase 저장 실패:", error);
-        alert("저장에 실패했습니다");
         console.groupEnd();
+        alert("저장에 실패했습니다");
         return;
       }
 
@@ -225,7 +269,7 @@ function SurveyPage() {
       console.log("5) 부모창 메시지 전달 준비");
       console.groupEnd();
 
-      sendRefreshMessageAndClose(submitData.submittedAt);
+      sendRefreshMessage(submitData.submittedAt);
     } catch (error) {
       console.error("[SurveyPage] 처리 실패:", error);
       console.groupEnd();
