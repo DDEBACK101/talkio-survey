@@ -8,6 +8,34 @@ export default function NoticePage() {
   const [searchParams] = useSearchParams();
   const cukey = searchParams.get("cukey")?.trim() || "";
 
+  const postToOpener = (payload, label = "opener postMessage") => {
+    console.group(`[NoticePage] ${label}`);
+    console.log("current href:", window.location.href);
+    console.log("current origin:", window.location.origin);
+    console.log("window.opener:", window.opener);
+    console.log("window.opener exists:", !!window.opener);
+    console.log("window.opener closed:", window.opener?.closed);
+    console.log("targetOrigin:", TALKIO_ORIGIN);
+    console.log("payload:", payload);
+
+    if (!window.opener || window.opener.closed) {
+      console.warn("[NoticePage] 부모창(opener)을 찾지 못했습니다.");
+      console.groupEnd();
+      return false;
+    }
+
+    try {
+      window.opener.postMessage(payload, TALKIO_ORIGIN);
+      console.log("[NoticePage] postMessage 전송 완료");
+      console.groupEnd();
+      return true;
+    } catch (error) {
+      console.error("[NoticePage] postMessage 전송 실패:", error);
+      console.groupEnd();
+      return false;
+    }
+  };
+
   useEffect(() => {
     const handleMessage = (event) => {
       console.group("[NoticePage] message 수신");
@@ -58,39 +86,30 @@ export default function NoticePage() {
         }
 
         // 2) Talkio 부모창으로 다시 전달
-        try {
-          if (window.opener && !window.opener.closed) {
-            const forwardPayload = {
-              type: "REFRESH_TALKIO_NOTICE",
-              cukey: event.data.cukey,
-              submittedAt: event.data.submittedAt,
-              forwardedAt: new Date().toISOString(),
-              source: "talkio-survey-notice-bridge",
-            };
+        const forwardPayload = {
+          type: "REFRESH_TALKIO_NOTICE",
+          cukey: event.data.cukey,
+          submittedAt: event.data.submittedAt,
+          forwardedAt: new Date().toISOString(),
+          source: "talkio-survey-notice-bridge",
+        };
 
-            console.log("[NoticePage] Talkio 부모창 전달 직전");
-            console.log("targetOrigin:", TALKIO_ORIGIN);
-            console.log("forwardPayload:", forwardPayload);
+        const forwarded = postToOpener(forwardPayload, "Talkio 부모창 전달");
 
-            window.opener.postMessage(forwardPayload, TALKIO_ORIGIN);
+        if (forwarded) {
+          console.log("[NoticePage] 부모창 전달 성공 - 1초 뒤 창 닫기");
+          console.groupEnd();
 
-            console.log("[NoticePage] Talkio 부모창 전달 완료");
-            console.log("[NoticePage] 1초 뒤 NoticePage 닫기");
-          } else {
-            console.warn(
-              "[NoticePage] Talkio 부모창(opener)을 찾지 못했습니다.",
-            );
-          }
-        } catch (forwardError) {
-          console.error("[NoticePage] Talkio 부모창 전달 실패:", forwardError);
+          setTimeout(() => {
+            console.log("[NoticePage] window.close() 실행");
+            window.close();
+          }, 1000);
+        } else {
+          console.warn(
+            "[NoticePage] 부모창 전달 실패 - 디버깅을 위해 창을 닫지 않습니다.",
+          );
+          console.groupEnd();
         }
-
-        console.groupEnd();
-
-        setTimeout(() => {
-          console.log("[NoticePage] window.close() 실행");
-          window.close();
-        }, 1000);
 
         return;
       }
@@ -145,10 +164,56 @@ export default function NoticePage() {
     console.groupEnd();
   };
 
+  const handleSendTestEvent = () => {
+    const testPayload = {
+      type: "TEST_EVENT_FROM_NOTICE",
+      message: "NoticePage에서 보낸 테스트 이벤트입니다.",
+      cukey,
+      sentAt: new Date().toISOString(),
+      source: "talkio-survey-notice-test-button",
+    };
+
+    const ok = postToOpener(testPayload, "테스트 이벤트 전송");
+
+    if (ok) {
+      alert(
+        "테스트 이벤트를 부모창으로 전송했습니다. 부모창 콘솔을 확인해주세요.",
+      );
+    } else {
+      alert(
+        "부모창(opener)을 찾지 못했습니다. 부모창의 여는 방식(window.open / target=_blank)을 먼저 확인해주세요.",
+      );
+    }
+  };
+
+  const handleCheckOpener = () => {
+    console.group("[NoticePage] opener 상태 확인");
+    console.log("current href:", window.location.href);
+    console.log("current origin:", window.location.origin);
+    console.log("window.opener:", window.opener);
+    console.log("window.opener exists:", !!window.opener);
+    console.log("window.opener closed:", window.opener?.closed);
+    console.groupEnd();
+
+    if (window.opener && !window.opener.closed) {
+      alert("opener가 연결되어 있습니다. 개발자도구 콘솔을 확인해주세요.");
+    } else {
+      alert("opener가 없습니다. 부모창 여는 방식 문제일 가능성이 큽니다.");
+    }
+  };
+
   return (
     <div className="notice-page">
       <button className="notice-button" onClick={handleMoveSurveyPage}>
         설문조사하러 가기
+      </button>
+
+      <button className="notice-button" onClick={handleSendTestEvent}>
+        이벤트 전송
+      </button>
+
+      <button className="notice-button" onClick={handleCheckOpener}>
+        opener 확인
       </button>
     </div>
   );
